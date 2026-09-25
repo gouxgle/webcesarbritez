@@ -295,8 +295,74 @@
   object-fit: contain;
   transition: transform .15s ease-out;
 }
+.gal__main--ampliable { cursor: zoom-in; position: relative; }
+.gal__main--ampliable:focus-visible { outline: 2px solid var(--badge-rec); outline-offset: 2px; }
 @media (hover: hover) and (pointer: fine) {
-  .gal__main:hover .gal__img { transform: scale(1.8); cursor: zoom-in; }
+  .gal__main--ampliable:hover .gal__img { transform: scale(1.8); }
+}
+
+/* Visor a pantalla completa */
+.sin-scroll { overflow: hidden; }
+.visor {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(10,15,25,.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: visor-in .15s ease-out;
+}
+@keyframes visor-in { from { opacity: 0; } }
+.visor__marco {
+  width: 100%;
+  height: 100%;
+  padding: 56px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+@media (min-width: 768px) { .visor__marco { padding: 48px 88px; } }
+.visor__img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  background: white;
+  border-radius: 8px;
+  cursor: default;
+}
+.visor__btn {
+  position: absolute;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.14);
+  color: white;
+  font-size: 1.6rem;
+  line-height: 1;
+  transition: background .15s;
+}
+.visor__btn:hover, .visor__btn:focus-visible { background: rgba(255,255,255,.28); outline: none; }
+.visor__cerrar { top: 12px; right: 12px; font-size: 1.2rem; }
+.visor__prev { left: 12px; top: 50%; transform: translateY(-50%); font-size: 2.2rem; }
+.visor__next { right: 12px; top: 50%; transform: translateY(-50%); font-size: 2.2rem; }
+@media (max-width: 767px) {
+  /* En mobile las flechas van abajo para no tapar la imagen (y está el swipe) */
+  .visor__prev, .visor__next { top: auto; bottom: 12px; transform: none; }
+  .visor__prev { left: calc(50% - 64px); }
+  .visor__next { right: calc(50% - 64px); }
+}
+.visor__contador {
+  position: absolute;
+  top: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255,255,255,.8);
+  font-size: 0.85rem;
 }
 .gal__video { width: 100%; height: 100%; border: 0; background: #000; }
 .gal__main.img-vacia svg { max-width: 120px; }

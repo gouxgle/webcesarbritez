@@ -30,6 +30,75 @@ function embedVideo(url) {
   return null;
 }
 
+/** Visor a pantalla completa (lightbox): flechas, teclado, swipe; Esc o fondo cierran. */
+function abrirVisor(imagenes, inicio, titulo) {
+  let i = inicio;
+  const foco = document.activeElement;
+  const img = el('img.visor__img', { alt: titulo });
+  const contador = el('p.visor__contador');
+  const varias = imagenes.length > 1;
+
+  // Escala la imagen hasta ocupar el espacio disponible (también las chicas: el objetivo
+  // es verla más grande que en la ficha), manteniendo la proporción.
+  const ajustar = () => {
+    if (!img.naturalWidth) return;
+    const cs = getComputedStyle(marco);
+    const w = marco.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const h = marco.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    const k = Math.min(w / img.naturalWidth, h / img.naturalHeight);
+    img.style.width = `${Math.floor(img.naturalWidth * k)}px`;
+    img.style.height = `${Math.floor(img.naturalHeight * k)}px`;
+  };
+  img.addEventListener('load', ajustar);
+
+  const ir = (n) => {
+    i = (n + imagenes.length) % imagenes.length;
+    img.src = imagenes[i];
+    contador.textContent = `${i + 1} / ${imagenes.length}`;
+  };
+  const cerrar = () => {
+    visor.remove();
+    document.body.classList.remove('sin-scroll');
+    document.removeEventListener('keydown', teclas);
+    window.removeEventListener('resize', ajustar);
+    foco?.focus?.();
+  };
+  const teclas = (e) => {
+    if (e.key === 'Escape') cerrar();
+    else if (varias && e.key === 'ArrowRight') ir(i + 1);
+    else if (varias && e.key === 'ArrowLeft') ir(i - 1);
+  };
+
+  const marco = el('div.visor__marco', {}, [img]);
+  const btnCerrar = el('button.visor__btn.visor__cerrar', { type: 'button', 'aria-label': 'Cerrar', text: '✕', onclick: cerrar });
+  const visor = el('div.visor', { role: 'dialog', 'aria-modal': 'true', 'aria-label': `Imágenes: ${titulo}` }, [
+    btnCerrar,
+    varias && el('button.visor__btn.visor__prev', { type: 'button', 'aria-label': 'Imagen anterior', text: '‹', onclick: () => ir(i - 1) }),
+    marco,
+    varias && el('button.visor__btn.visor__next', { type: 'button', 'aria-label': 'Imagen siguiente', text: '›', onclick: () => ir(i + 1) }),
+    varias && contador,
+  ]);
+  // Click en el fondo (no en la imagen ni en los botones) cierra
+  visor.addEventListener('click', (e) => { if (e.target === visor || e.target.classList.contains('visor__marco')) cerrar(); });
+
+  // Swipe en pantallas táctiles
+  let x0 = null;
+  visor.addEventListener('touchstart', (e) => { x0 = e.touches[0].clientX; }, { passive: true });
+  visor.addEventListener('touchend', (e) => {
+    if (x0 === null || !varias) return;
+    const dx = e.changedTouches[0].clientX - x0;
+    if (Math.abs(dx) > 50) ir(dx < 0 ? i + 1 : i - 1);
+    x0 = null;
+  });
+
+  document.addEventListener('keydown', teclas);
+  window.addEventListener('resize', ajustar);
+  document.body.classList.add('sin-scroll');
+  document.body.append(visor);
+  ir(i);
+  btnCerrar.focus();
+}
+
 function galeria(p) {
   const medios = p.imagenes.map((src) => ({ tipo: 'img', src }));
   if (p.video_url) medios.push({ tipo: 'video', src: p.video_url });
@@ -44,6 +113,12 @@ function galeria(p) {
     if (m.tipo === 'img') {
       const img = el('img.gal__img', { src: m.src, alt: p.titulo });
       principal.replaceChildren(img);
+      principal.onclick = () => abrirVisor(p.imagenes, p.imagenes.indexOf(m.src), p.titulo);
+      principal.classList.add('gal__main--ampliable');
+      principal.setAttribute('role', 'button');
+      principal.setAttribute('tabindex', '0');
+      principal.setAttribute('aria-label', 'Ampliar imagen');
+      principal.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); principal.onclick(); } };
       // Zoom tipo marketplace: la imagen sigue al puntero (solo con mouse).
       principal.onmousemove = (e) => {
         const r = principal.getBoundingClientRect();
@@ -51,6 +126,10 @@ function galeria(p) {
       };
     } else {
       principal.onmousemove = null;
+      principal.onclick = null;
+      principal.onkeydown = null;
+      principal.classList.remove('gal__main--ampliable');
+      ['role', 'tabindex', 'aria-label'].forEach((a) => principal.removeAttribute(a));
       const emb = embedVideo(m.src);
       principal.replaceChildren(emb
         ? el('iframe.gal__video', { src: emb, title: `Video: ${p.titulo}`, allow: 'fullscreen; picture-in-picture', loading: 'lazy' })

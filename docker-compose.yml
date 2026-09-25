@@ -1,3 +1,5 @@
+# Entorno local / de prueba. En prod el compose real es /opt/docker/cesarbritez/docker-compose.yml
+# (plantilla en vps-config/cesarbritez/docker-compose.yml).
 services:
   web:
     build: .
@@ -5,9 +7,28 @@ services:
     restart: unless-stopped
     ports:
       - "${APP_PORT:-8080}:80"
+    volumes:
+      # Solo las imágenes de productos del CRM (no el resto de uploads: comprobantes, remitos…), :ro
+      - ${ABERTURAS_UPLOADS:-../aberturas/uploads}/productos:/usr/share/nginx/html/uploads/productos:ro
     networks:
       - proxy
+      - db
+
+  api:
+    build: ./api
+    container_name: cesarbritez-api
+    restart: unless-stopped
+    environment:
+      # Rol de solo lectura: únicamente puede leer la vista catalogo_web
+      DATABASE_URL: postgres://web_catalogo:${WEB_CATALOGO_DB_PASS}@aberturas-db:5432/postgres
+    networks:
+      - proxy
+      - db
 
 networks:
   proxy:
     external: true
+    name: ${PROXY_NETWORK:-proxy}
+  db:
+    external: true
+    name: ${DB_NETWORK:-aberturas_default}

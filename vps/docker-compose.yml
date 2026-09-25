@@ -9,6 +9,23 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:${WEB_PORT:-8080}:80"
+    volumes:
+      # Solo las imágenes de productos del CRM, en solo lectura (NO el resto de uploads)
+      - /var/lib/docker-data/aberturas/uploads/productos:/usr/share/nginx/html/uploads/productos:ro
+
+  # ── Sitio web — API del catálogo online (solo lectura) ───────
+  # Lee únicamente la vista catalogo_web con el rol web_catalogo. Sin puertos publicados:
+  # nginx del contenedor web la alcanza por nombre (cesarbritez-api) en esta red.
+  web-api:
+    build: ./web/api
+    container_name: cesarbritez-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://web_catalogo:${WEB_CATALOGO_DB_PASS}@aberturas-db:5432/postgres
+      TZ: America/Argentina/Buenos_Aires
+    depends_on:
+      aberturas-db:
+        condition: service_healthy
 
   # ── Aberturas CRM — Base de datos ────────────────────────────
   aberturas-db:

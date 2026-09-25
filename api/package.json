@@ -1,0 +1,16 @@
+{
+  "name": "cesarbritez-web-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "API de solo lectura del catálogo online (lee la vista catalogo_web de aberturas)",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch --env-file-if-exists=.env src/index.js"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.7",
+    "hono": "^4.7.4",
+    "pg": "^8.13.3"
+  }
+}
